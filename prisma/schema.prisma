@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id              String   @id @default(cuid())
+  platform        String
+  externalId      String
+  authorHandle    String
+  authorName      String?
+  authorFollowers Int?
+  text            String
+  url             String
+  mediaType       String? // none | photo | video | gif
+  createdAt       DateTime // when the post was authored
+  discoveredAt    DateTime @default(now())
+
+  // engagement (updated as the post grows)
+  likes    Int
+  retweets Int
+  replies  Int
+  quotes   Int
+  views    Int?
+
+  category      String?
+  viralScore    Float? // predicted probability 0..1 at discovery
+  stage         String? // already_viral | upcoming
+  peakComposite Float   @default(0)
+  peakViews     Int     @default(0)
+  notified      Boolean @default(false)
+
+  snapshots  Snapshot[]
+  prediction Prediction?
+  feedback   Feedback[]
+
+  @@unique([platform, externalId])
+}
+
+model Snapshot {
+  id       Int      @id @default(autoincrement())
+  postId   String
+  post     Post     @relation(fields: [postId], references: [id])
+  takenAt  DateTime @default(now())
+  ageHours Float
+  likes    Int
+  retweets Int
+  replies  Int
+  quotes   Int
+  views    Int?
+  score    Float // weighted engagement composite at this moment
+}
+
+model Prediction {
+  id           Int       @id @default(autoincrement())
+  postId       String    @unique
+  post         Post      @relation(fields: [postId], references: [id])
+  features     String // JSON feature vector at discovery
+  predicted    Float // predicted viral probability at discovery
+  outcomeKnown Boolean   @default(false)
+  wentViral    Boolean?
+  peakScore    Float?
+  labeledAt    DateTime?
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  label     String // viral | not_viral
+  createdAt DateTime @default(now())
+}
+
+model ModelState {
+  id        Int      @id @default(1)
+  json      String // serialized model (weights, standardization, etc.)
+  samples   Int      @default(0)
+  trainedAt DateTime @default(now()) @updatedAt
+}

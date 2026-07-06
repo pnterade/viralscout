@@ -1,0 +1,20 @@
+[Unit]
+Description=ViralScout - X/Twitter viral-post scanner
+# Wait for the network before starting so the first scan can reach the APIs.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/viralscout
+Environment=HOME=/home/ubuntu
+Environment=PATH=/usr/bin:/usr/local/bin:/bin
+# Runs `tsx src/scheduler.ts` (loads .env from WorkingDirectory automatically).
+ExecStart=/usr/bin/npm start
+# Keep it alive: restart on any crash, wait 10s between attempts.
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
