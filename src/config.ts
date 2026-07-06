@@ -48,6 +48,14 @@ export const config = {
     upcomingRatio: num(process.env.UPCOMING_RATIO, 0.1),
   },
 
+  // Only scan during these hours (in ACTIVE_TIMEZONE). Outside the window the bot idles.
+  // Window is [startHour, endHour): default 07:00–21:00 (7 AM to 9 PM).
+  schedule: {
+    startHour: num(process.env.ACTIVE_START_HOUR, 7),
+    endHour: num(process.env.ACTIVE_END_HOUR, 21),
+    timezone: process.env.ACTIVE_TIMEZONE || 'Europe/Athens', // EEST/EET
+  },
+
   filters: {
     dropGiveaways: bool(process.env.DROP_GIVEAWAYS, true), // giveaways / airdrops / promos
     dropSelfPromo: bool(process.env.DROP_SELF_PROMO, true), // follow-farming / self-promo threads
