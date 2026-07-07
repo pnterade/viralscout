@@ -35,6 +35,11 @@ export function upcomingMinViewsFor(platform: string): number {
   return config.scoring.upcomingMinViews[platform] ?? config.scoring.upcomingMinViews.twitter;
 }
 
+/** Max post age in days before it's considered stale (0 = no limit), per platform. */
+export function maxAgeDaysFor(platform: string): number {
+  return config.scoring.maxAgeDays[platform] ?? 0;
+}
+
 /** Stage is view-based: already-viral vs a smaller "rising" band, else ignore. */
 export function classifyStage(p: RawPost, score: number): Stage {
   const views = p.views ?? 0;

@@ -34,6 +34,8 @@ export const config = {
 
   apify: {
     token: process.env.APIFY_TOKEN || '', // TikTok data via Apify (clockworks/tiktok-scraper)
+    // Only scrape TikToks newer than this (relative, e.g. "7 days") so you get NEW viral, not all-time top.
+    oldestPostDate: process.env.APIFY_OLDEST_POST_DATE || '7 days',
   },
 
   anthropic: {
@@ -86,6 +88,12 @@ export const config = {
     upcomingMinViews: {
       twitter: num(process.env.UPCOMING_MIN_VIEWS, 50000),
       tiktok: num(process.env.TIKTOK_UPCOMING_MIN_VIEWS, 150000),
+    } as Record<string, number>,
+    // Drop posts older than this many days (per platform). 0 = no age limit.
+    // X "Latest" search is already recent; TikTok hashtags can return old top-posts.
+    maxAgeDays: {
+      twitter: num(process.env.TWITTER_MAX_AGE_DAYS, 0),
+      tiktok: num(process.env.TIKTOK_MAX_AGE_DAYS, 7),
     } as Record<string, number>,
     minTrainSamples: num(process.env.MIN_TRAIN_SAMPLES, 40),
   },

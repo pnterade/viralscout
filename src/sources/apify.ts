@@ -51,7 +51,13 @@ export class ApifyTikTokSource implements Source {
   async fetchCandidates(queries: string[], limit: number): Promise<RawPost[]> {
     try {
       // One run covers all niche hashtags; resultsPerPage is per hashtag.
-      const items = await this.run({ hashtags: queries, resultsPerPage: limit, searchSection: '/video' });
+      // oldestPostDateUnified keeps it to recently-posted videos (new viral, not all-time top).
+      const items = await this.run({
+        hashtags: queries,
+        resultsPerPage: limit,
+        searchSection: '/video',
+        oldestPostDateUnified: config.apify.oldestPostDate,
+      });
       return items.map((i) => this.map(i));
     } catch (e) {
       log.error('[apify] tiktok fetch failed:', e);

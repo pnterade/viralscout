@@ -5,7 +5,7 @@ import { buildQueries } from './queries';
 import { categorizeBatch } from './scoring/categorize';
 import { junkReason } from './scoring/junk';
 import { extractFeatures, composite, ageHours } from './scoring/features';
-import { scoreFeatures, classifyStage, viralViewsFor } from './scoring/predict';
+import { scoreFeatures, classifyStage, viralViewsFor, maxAgeDaysFor } from './scoring/predict';
 import { loadModel } from './learn/train';
 import { loadTasteModel, tasteScore, tasteActive } from './learn/taste';
 import { notify } from './delivery/telegram';
@@ -43,15 +43,26 @@ export async function scan(): Promise<void> {
   });
   if (Object.keys(dropped).length) log.info(`Filtered junk: ${JSON.stringify(dropped)}.`);
 
+  // Freshness: drop stale posts (e.g. old all-time-top TikToks) so you only get NEW viral.
+  const now = new Date();
+  let stale = 0;
+  const recent = kept.filter((p) => {
+    const maxDays = maxAgeDaysFor(p.platform);
+    if (maxDays <= 0 || ageHours(p.createdAt, now) <= maxDays * 24) return true;
+    stale++;
+    return false;
+  });
+  if (stale) log.info(`Dropped ${stale} stale post(s) past the freshness window.`);
+
   // Dedupe BEFORE categorizing — Claude is the paid step, so only ever send it posts
   // we haven't seen. After warm-up most candidates are repeats, so this is a big saving.
   const existing = await prisma.post.findMany({
-    where: { externalId: { in: kept.map((p) => p.externalId) } },
+    where: { externalId: { in: recent.map((p) => p.externalId) } },
     select: { platform: true, externalId: true },
   });
   const seen = new Set(existing.map((e) => `${e.platform}:${e.externalId}`));
-  const fresh = kept.filter((p) => !seen.has(`${p.platform}:${p.externalId}`));
-  log.info(`${fresh.length} new post(s) to categorize (skipped ${kept.length - fresh.length} already seen).`);
+  const fresh = recent.filter((p) => !seen.has(`${p.platform}:${p.externalId}`));
+  log.info(`${fresh.length} new post(s) to categorize (skipped ${recent.length - fresh.length} already seen).`);
   if (!fresh.length) return;
 
   const model = await loadModel();
