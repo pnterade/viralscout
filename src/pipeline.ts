@@ -1,24 +1,34 @@
 import { prisma } from './db';
-import { getSource } from './sources';
+import { getSources } from './sources';
 import { config } from './config';
 import { buildQueries } from './queries';
 import { categorizeBatch } from './scoring/categorize';
 import { junkReason } from './scoring/junk';
 import { extractFeatures, composite, ageHours } from './scoring/features';
-import { scoreFeatures, classifyStage } from './scoring/predict';
+import { scoreFeatures, classifyStage, viralViewsFor } from './scoring/predict';
 import { loadModel } from './learn/train';
 import { loadTasteModel, tasteScore, tasteActive } from './learn/taste';
 import { notify } from './delivery/telegram';
+import { RawPost } from './types';
 import { log } from './logger';
 
-/** One scan: fetch candidates, score them, store + alert on the promising ones. */
+/** One scan: fetch from every source, score them, store + alert on the promising ones. */
 export async function scan(): Promise<void> {
-  const source = getSource();
-  const queries = buildQueries();
-  log.info(`Scanning via "${source.name}" across ${queries.length} queries...`);
+  const sources = getSources();
+  log.info(`Scanning ${sources.length} source(s): ${sources.map((s) => s.platform).join(', ')}...`);
 
-  const raw = await source.fetchCandidates(queries, config.scan.maxPerQuery);
-  log.info(`Fetched ${raw.length} candidates.`);
+  // Fetch from every platform and merge into one candidate pool.
+  let raw: RawPost[] = [];
+  for (const source of sources) {
+    try {
+      const got = await source.fetchCandidates(buildQueries(source.platform), config.scan.maxPerQuery);
+      log.info(`  ${source.platform} (${source.name}): ${got.length} candidates`);
+      raw = raw.concat(got);
+    } catch (e) {
+      log.error(`source ${source.name} failed:`, e);
+    }
+  }
+  log.info(`Fetched ${raw.length} total candidates.`);
   if (!raw.length) return;
 
   // Junk filter (giveaways/promos, follow-farming/self-promo) before anything else.
@@ -116,11 +126,14 @@ export async function scan(): Promise<void> {
   // a disliked-type as little as ~0.5x. So your preferences steadily reshape the feed.
   const mult = (t: number) => Math.max(0.1, 1 + (t - 0.5) * config.taste.weight);
 
-  // Build a mostly-viral alert batch: already-viral first (by taste-weighted views,
-  // videos and non-videos alike), reserving a small share for "upcoming" posts.
+  // Rank already-viral posts by their "virality multiple" (views ÷ that platform's viral
+  // bar), so a TikTok's millions don't automatically bury a strong X post — each competes
+  // relative to its own platform. Taste still bends the order.
+  const viralMultiple = (post: { views: number | null; platform: string }) =>
+    (post.views ?? 0) / viralViewsFor(post.platform);
   const viral = flaggedPosts
     .filter((f) => f.post.stage === 'already_viral')
-    .sort((a, b) => (b.post.views ?? 0) * mult(b.taste) - (a.post.views ?? 0) * mult(a.taste));
+    .sort((a, b) => viralMultiple(b.post) * mult(b.taste) - viralMultiple(a.post) * mult(a.taste));
   const upcoming = flaggedPosts
     .filter((f) => f.post.stage === 'upcoming')
     .sort((a, b) => (b.post.viralScore ?? 0) * mult(b.taste) - (a.post.viralScore ?? 0) * mult(a.taste));

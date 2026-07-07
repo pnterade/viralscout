@@ -1,5 +1,6 @@
 import { config } from './config';
 
+// X/Twitter search operators per niche.
 const NICHE_TERMS: Record<string, string> = {
   memes: '(meme OR funny OR relatable OR lol)',
   animals: '(dog OR cat OR puppy OR animal OR pet)',
@@ -8,8 +9,21 @@ const NICHE_TERMS: Record<string, string> = {
   technology: '(AI OR tech OR startup OR software OR gadget)',
 };
 
-/** Build search queries from configured niches (or use explicit QUERIES override). */
-export function buildQueries(): string[] {
+// TikTok keyword-search terms per niche (plain keywords, no search operators).
+const TIKTOK_TERMS: Record<string, string> = {
+  memes: 'funny meme',
+  animals: 'cute animals',
+  politics: 'politics news',
+  crypto: 'crypto',
+  technology: 'tech',
+};
+
+/** Build per-platform search queries from the configured niches. */
+export function buildQueries(platform: string): string[] {
+  if (platform === 'tiktok') {
+    return config.niches.map((n) => TIKTOK_TERMS[n] || n);
+  }
+  // X/Twitter
   if (config.queries.length) return config.queries;
   const video = config.scan.requireVideo ? ' filter:native_video' : '';
   return config.niches.map((n) => {

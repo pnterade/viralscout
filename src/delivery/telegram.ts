@@ -14,6 +14,7 @@ const fmt = (n: number) => (n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, ''
 
 interface NotifiablePost {
   id: string;
+  platform: string;
   stage: string | null;
   category: string | null;
   viralScore: number | null;
@@ -28,6 +29,8 @@ interface NotifiablePost {
   url: string;
 }
 
+const PLATFORM_LABEL: Record<string, string> = { twitter: '🐦 X', tiktok: '🎵 TikTok' };
+
 /** Push a flagged post to Telegram (or log it if Telegram isn't configured). */
 export async function notify(post: NotifiablePost): Promise<void> {
   const score = Math.round((post.viralScore ?? 0) * 100);
@@ -38,10 +41,11 @@ export async function notify(post: NotifiablePost): Promise<void> {
   const isVideo = post.mediaType === 'video' || post.mediaType === 'gif';
   const badge = post.stage === 'already_viral' ? '🔥 VIRAL' : '📈 RISING';
   const clip = isVideo ? '🎬 ' : '';
-  // Plain text (no parse_mode): tweet content can contain *, _, [ etc. that break
+  const platform = PLATFORM_LABEL[post.platform] ?? post.platform;
+  // Plain text (no parse_mode): post content can contain *, _, [ etc. that break
   // Telegram's Markdown parser. Telegram still auto-links the URL.
   const text =
-    `${badge}  ·  ${clip}${(post.category ?? 'other').toUpperCase()}\n` +
+    `${platform}  ·  ${badge}  ·  ${clip}${(post.category ?? 'other').toUpperCase()}\n` +
     `👁️ ${fmt(post.views ?? 0)} views\n\n` +
     `${post.text}\n\n` +
     `❤️ ${fmt(post.likes)}   🔁 ${fmt(post.retweets)}   💬 ${fmt(post.replies)}\n` +

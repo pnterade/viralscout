@@ -20,9 +20,11 @@ export interface PostRef {
   createdAt: Date;
 }
 
-/** A pluggable data source. Swap mock -> real X API without touching the pipeline. */
+/** A pluggable data source. Multiple can run at once (X + TikTok + …). */
 export interface Source {
   name: string;
+  /** Platform these posts belong to: 'twitter' | 'tiktok' | … */
+  platform: string;
   /** Search for fresh candidate posts across the given queries. */
   fetchCandidates(queries: string[], limit: number): Promise<RawPost[]>;
   /** Re-fetch current engagement for known posts, to measure growth. */

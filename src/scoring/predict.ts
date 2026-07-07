@@ -25,10 +25,20 @@ export function scoreFeatures(model: Model | null, f: Record<string, number>): n
 
 export type Stage = 'already_viral' | 'upcoming' | 'ignore';
 
+/** View threshold for "already viral", per platform (TikTok is much higher than X). */
+export function viralViewsFor(platform: string): number {
+  return config.scoring.viralViews[platform] ?? config.scoring.viralViews.twitter;
+}
+
+/** Lower bound of the "upcoming/rising" view band, per platform. */
+export function upcomingMinViewsFor(platform: string): number {
+  return config.scoring.upcomingMinViews[platform] ?? config.scoring.upcomingMinViews.twitter;
+}
+
 /** Stage is view-based: already-viral vs a smaller "rising" band, else ignore. */
 export function classifyStage(p: RawPost, score: number): Stage {
   const views = p.views ?? 0;
-  if (views >= config.scoring.viralViews) return 'already_viral';
-  if (views >= config.scoring.upcomingMinViews && score >= config.scoring.notifyThreshold) return 'upcoming';
+  if (views >= viralViewsFor(p.platform)) return 'already_viral';
+  if (views >= upcomingMinViewsFor(p.platform) && score >= config.scoring.notifyThreshold) return 'upcoming';
   return 'ignore';
 }

@@ -18,7 +18,7 @@ export async function runDemo(n = 600): Promise<void> {
   for (const p of raw) {
     const features = extractFeatures(p, keywordCategory(p));
     const [mature] = await src.refresh([{ externalId: p.externalId, createdAt: new Date(Date.now() - 48 * 3.6e6) }]);
-    const label = (mature.views ?? 0) >= config.scoring.viralViews ? 1 : 0;
+    const label = (mature.views ?? 0) >= config.scoring.viralViews.twitter ? 1 : 0;
     rows.push({ features, label, heur: heuristicScore(features) });
   }
 

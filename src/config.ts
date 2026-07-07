@@ -11,7 +11,10 @@ function bool(v: string | undefined, d: boolean): boolean {
 }
 
 export const config = {
-  source: process.env.SOURCE || 'mock', // mock | twitterapi
+  // One or more data sources to run together (comma-separated), e.g. "twitterapi,tiktok".
+  // Falls back to the legacy single SOURCE var for backward compatibility.
+  sources: (process.env.SOURCES || process.env.SOURCE || 'mock')
+    .split(',').map((s) => s.trim()).filter(Boolean),
   niches: (process.env.NICHES || 'memes,animals,politics,crypto,technology')
     .split(',').map((s) => s.trim()).filter(Boolean),
   queries: (process.env.QUERIES || '').split('|').map((s) => s.trim()).filter(Boolean),
@@ -21,6 +24,12 @@ export const config = {
     apiKey: process.env.TWITTERAPI_KEY || '',
     // Free tier allows 1 request / 5s. Bump down after upgrading the plan.
     minIntervalMs: num(process.env.TWITTERAPI_MIN_INTERVAL_MS, 5200),
+  },
+
+  ensemble: {
+    baseUrl: process.env.ENSEMBLE_BASE_URL || 'https://ensembledata.com/apis',
+    token: process.env.ENSEMBLE_TOKEN || '', // TikTok data via EnsembleData
+    minIntervalMs: num(process.env.ENSEMBLE_MIN_INTERVAL_MS, 400),
   },
 
   anthropic: {
@@ -64,10 +73,16 @@ export const config = {
 
   scoring: {
     notifyThreshold: num(process.env.NOTIFY_THRESHOLD, 0.6),
-    // A post is "already viral" at/above this view count.
-    viralViews: num(process.env.VIRAL_VIEWS, 200000),
-    // "Upcoming" = views in [upcomingMinViews, viralViews) and rising fast.
-    upcomingMinViews: num(process.env.UPCOMING_MIN_VIEWS, 50000),
+    // "Already viral" view threshold, per platform (TikTok runs much higher than X).
+    viralViews: {
+      twitter: num(process.env.VIRAL_VIEWS, 200000),
+      tiktok: num(process.env.TIKTOK_VIRAL_VIEWS, 500000),
+    } as Record<string, number>,
+    // "Upcoming" = views in [upcomingMinViews, viralViews) and rising fast, per platform.
+    upcomingMinViews: {
+      twitter: num(process.env.UPCOMING_MIN_VIEWS, 50000),
+      tiktok: num(process.env.TIKTOK_UPCOMING_MIN_VIEWS, 150000),
+    } as Record<string, number>,
     minTrainSamples: num(process.env.MIN_TRAIN_SAMPLES, 40),
   },
 

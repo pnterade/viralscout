@@ -17,6 +17,7 @@ async function throttle(minInterval: number): Promise<void> {
  */
 export class TwitterApiSource implements Source {
   name = 'twitterapi';
+  platform = 'twitter';
 
   private async get(path: string, params: Record<string, string>): Promise<any> {
     await throttle(config.twitterApi.minIntervalMs);

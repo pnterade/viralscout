@@ -40,29 +40,46 @@ function engagementAt(seed: number, potential: number, ageH: number) {
 }
 
 export class MockSource implements Source {
-  name = 'mock';
+  name: string;
+  platform: string;
+  private viewMult: number;
+
+  constructor(platform = 'twitter') {
+    this.platform = platform;
+    this.name = platform === 'twitter' ? 'mock' : `mock-${platform}`;
+    this.viewMult = platform === 'tiktok' ? 12 : 1; // TikTok play counts run far higher than X views
+  }
+
+  private engagement(seed: number, potential: number, ageH: number) {
+    const e = engagementAt(seed, potential, ageH);
+    return { ...e, views: e.views * this.viewMult };
+  }
 
   private make(cat: string, index: number, now: Date): RawPost {
-    const id = `mock-${cat}-${index}`;
+    const id = `mock-${this.platform}-${cat}-${index}`;
     const seed = unit(id);
     const potential = unit(id + 'p');
     const ageH = 0.16 + unit(id + 'a') * 8; // 10 min .. 8 h old
     const createdAt = new Date(now.getTime() - ageH * 3.6e6);
     const followers = Math.floor(500 + Math.pow(unit(id + 'f'), 2) * 3_000_000);
-    const mediaType = ['none', 'photo', 'video', 'gif'][Math.floor(unit(id + 'm') * 4)];
+    const isTikTok = this.platform === 'tiktok';
+    const mediaType = isTikTok ? 'video' : ['none', 'photo', 'video', 'gif'][Math.floor(unit(id + 'm') * 4)];
+    const handle = `${cat}_acct_${index % 50}`;
     const texts = SAMPLE_TEXT[cat];
     const text = texts[Math.floor(unit(id + 't') * texts.length)];
     return {
-      platform: 'twitter',
+      platform: this.platform,
       externalId: id,
-      authorHandle: `${cat}_acct_${index % 50}`,
+      authorHandle: handle,
       authorName: `${cat} poster`,
       authorFollowers: followers,
       text,
-      url: `https://twitter.com/i/status/${hash(id)}`,
+      url: isTikTok
+        ? `https://www.tiktok.com/@${handle}/video/${hash(id)}`
+        : `https://twitter.com/i/status/${hash(id)}`,
       mediaType,
       createdAt,
-      ...engagementAt(seed, potential, ageH),
+      ...this.engagement(seed, potential, ageH),
     };
   }
 
@@ -84,13 +101,13 @@ export class MockSource implements Source {
       const potential = unit(r.externalId + 'p');
       const ageH = (now.getTime() - r.createdAt.getTime()) / 3.6e6;
       return {
-        platform: 'twitter',
+        platform: this.platform,
         externalId: r.externalId,
         authorHandle: '',
         text: '',
         url: '',
         createdAt: r.createdAt,
-        ...engagementAt(seed, potential, ageH),
+        ...this.engagement(seed, potential, ageH),
       } as RawPost;
     });
   }
