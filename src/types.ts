@@ -18,6 +18,7 @@ export interface RawPost {
 export interface PostRef {
   externalId: string;
   createdAt: Date;
+  url?: string; // some providers (Apify) refresh by post URL rather than id
 }
 
 /** A pluggable data source. Multiple can run at once (X + TikTok + …). */

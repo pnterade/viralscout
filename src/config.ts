@@ -32,6 +32,10 @@ export const config = {
     minIntervalMs: num(process.env.ENSEMBLE_MIN_INTERVAL_MS, 400),
   },
 
+  apify: {
+    token: process.env.APIFY_TOKEN || '', // TikTok data via Apify (clockworks/tiktok-scraper)
+  },
+
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     model: process.env.ANTHROPIC_MODEL || 'claude-opus-4-8',

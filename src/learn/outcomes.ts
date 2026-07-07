@@ -24,7 +24,9 @@ export async function track(): Promise<void> {
   for (const [platform, group] of byPlatform) {
     const source = sourceByPlatform.get(platform);
     if (!source) continue; // platform not currently configured — skip its posts
-    const fresh = await source.refresh(group.map((p) => ({ externalId: p.externalId, createdAt: p.createdAt })));
+    const fresh = await source.refresh(
+      group.map((p) => ({ externalId: p.externalId, createdAt: p.createdAt, url: p.url })),
+    );
     const byId = new Map(fresh.map((f) => [f.externalId, f]));
 
     for (const p of group) {
