@@ -62,12 +62,12 @@ export class TikTokSource implements Source {
 
   async fetchCandidates(queries: string[], limit: number): Promise<RawPost[]> {
     const out: RawPost[] = [];
-    for (const keyword of queries) {
+    for (const hashtag of queries) {
       try {
-        const body = await this.get('/tt/keyword/posts', { keyword, cursor: '0' });
+        const body = await this.get('/tt/hashtag/posts', { name: hashtag, cursor: '0' });
         for (const p of extractPosts(body).slice(0, limit)) out.push(this.map(p));
       } catch (e) {
-        log.error('[ensembledata] keyword search failed:', keyword, e);
+        log.error('[ensembledata] hashtag search failed:', hashtag, e);
       }
     }
     return out;
@@ -76,7 +76,7 @@ export class TikTokSource implements Source {
   async refresh(refs: PostRef[]): Promise<RawPost[]> {
     if (!refs.length) return [];
     try {
-      const body = await this.get('/tt/post-multi-info', { posts: refs.map((r) => r.externalId).join(',') });
+      const body = await this.get('/tt/post/multi-info', { ids: refs.map((r) => r.externalId).join(',') });
       return extractPosts(body).map((p) => this.map(p));
     } catch (e) {
       log.error('[ensembledata] refresh failed:', e);

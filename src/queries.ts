@@ -9,11 +9,11 @@ const NICHE_TERMS: Record<string, string> = {
   technology: '(AI OR tech OR startup OR software OR gadget)',
 };
 
-// TikTok keyword-search terms per niche (plain keywords, no search operators).
+// TikTok hashtags per niche (single token, no '#').
 const TIKTOK_TERMS: Record<string, string> = {
-  memes: 'funny meme',
-  animals: 'cute animals',
-  politics: 'politics news',
+  memes: 'meme',
+  animals: 'animals',
+  politics: 'politics',
   crypto: 'crypto',
   technology: 'tech',
 };
